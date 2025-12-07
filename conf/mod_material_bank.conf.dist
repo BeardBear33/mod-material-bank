@@ -1,0 +1,31 @@
+#=============================================================#
+# Material Bank – základní konfigurace / basic configuration  #
+#=============================================================#
+
+# CS: Přepínač jazyka pro texty z modulů (cs | en).
+#
+# EN: Language used for module text output (cs | en).
+MaterialBank.Locale = cs
+
+# CS: Pozor, neměňte toto nastavení, pokud už máte u bankéře uložené předměty.
+#     0 = každá frakce má vlastní banku (Alliance a Horde oddělené)
+#     1 = všechny postavy na účtu sdílejí jednu společnou banku (Alliance + Horde)
+#
+# EN: Warning: do not change this setting if you already have items stored at the banker.
+#     0 = each faction has its own bank (Alliance and Horde separated)
+#     1 = all characters on the account share a single common bank (Alliance + Horde)   
+MaterialBank.SharedAcrossFactions = 0
+
+# CS: Jaký NPC entry se použije pro přivolaného bankéře (.bank)
+# EN: Which NPC entry will be used for the summoned banker (.bank)
+MaterialBank.BankerNpcEntry = 987458
+
+# CS: Jak dlouho (v milisekundách) bude přivolaný bankéř spawnutý.
+# EN: How long (in milliseconds) the summoned banker will stay spawned.
+# default 300000 = 5 minutes
+MaterialBank.BankerDespawnMs = 300000
+
+# CS: Cooldown mezi přivoláním bankéře (v sekundách)
+# EN: Cooldown between summoning the banker (in seconds)
+# default 305 = 5 minutes
+MaterialBank.SummonCooldown = 305
