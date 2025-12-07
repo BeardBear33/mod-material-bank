@@ -1,6 +1,6 @@
 # mod-material-bank
 
-### 🇨🇿 [Czech version](README_CS.md)
+### CS [Czech version](README_CS.md)
 
 ## Description (EN)  
 - Characters on the same account and in the same faction share a common bank. The faction restriction can optionally be enabled/disabled in the configuration.  
