@@ -2,11 +2,13 @@
 
 Přidává na server account-wide úschovu předmětů (tzv. „material / item banku“), která je sdílená mezi postavami na stejném účtu (a volitelně oddělená podle frakce).  
 Modul kombinuje NPC bankéře, chatové příkazy a malá QoL vylepšení pro profese.  
-Pro úplnou integraci je zapotřebí mít u klienta stažený addon, který přidá do profesního okna tlačítko na vytažení materiálu potřebného pro výrobu, uloženého u bankéře.
+Pro úplnou integraci je zapotřebí mít u klienta stažený addon, který přidá do profesního okna tlačítko na vytažení materiálu potřebného pro výrobu, uloženého u bankéře.  
+NPC pro Material Bank spawnete příkazem `.npc add 987458`.  
 
 Adds an account-wide item storage system to the server (a “material / item bank”) that is shared between characters on the same account (and optionally separated by faction).  
 The module combines an NPC banker, chat commands, and small QoL improvements for professions.  
 For full integration, the client needs to have an addon installed that adds a button to the profession window to withdraw materials needed for crafting that are stored at the banker.
+NPC for Material Bank is spawned with the command `.npc add 987458`.  
 
 ---
 
