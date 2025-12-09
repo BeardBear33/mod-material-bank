@@ -5,19 +5,30 @@
 
 namespace MaterialBank
 {
-    uint64 GetAccountItemCount(uint32 accountId, uint32 itemEntry);
+
+    uint64 GetAccountItemCount(uint32 accountId, uint8 teamId, uint8 categoryId, uint32 itemEntry);
 
     uint64 GetAccountItemCount(uint32 accountId, uint8 teamId, uint32 itemEntry);
 
-    void AddToAccountBank(uint32 accountId, uint32 itemEntry, uint64 count);
+    uint64 GetAccountItemCount(uint32 accountId, uint32 itemEntry);
+
+    void AddToAccountBank(uint32 accountId, uint8 teamId, uint8 categoryId, uint32 itemEntry, uint64 count);
 
     void AddToAccountBank(uint32 accountId, uint8 teamId, uint32 itemEntry, uint64 count);
 
-    uint64 RemoveFromAccountBank(uint32 accountId, uint32 itemEntry, uint64 count);
+    void AddToAccountBank(uint32 accountId, uint32 itemEntry, uint64 count);
+
+    uint64 RemoveFromAccountBank(uint32 accountId, uint8 teamId, uint8 categoryId, uint32 itemEntry, uint64 count);
 
     uint64 RemoveFromAccountBank(uint32 accountId, uint8 teamId, uint32 itemEntry, uint64 count);
 
+    uint64 RemoveFromAccountBank(uint32 accountId, uint32 itemEntry, uint64 count);
+
+    uint64 MoveFromBankToBags(Player* player, uint8 categoryId, uint32 itemEntry, uint64 missing);
+
     uint64 MoveFromBankToBags(Player* player, uint32 itemEntry, uint64 missing);
+
+    uint64 GetBankItemCount(Player* player, uint8 categoryId, uint32 itemEntry);
 
     uint64 GetBankItemCount(Player* player, uint32 itemEntry);
 

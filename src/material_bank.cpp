@@ -14,6 +14,8 @@ namespace MaterialBank
 {
     namespace
     {
+        static constexpr uint8 DEFAULT_CATEGORY = 0;
+
         static uint32 GetAccountId(Player* player)
         {
             if (!player)
@@ -44,17 +46,15 @@ namespace MaterialBank
         return static_cast<uint8>(player->GetTeamId());
     }
 
-    // === DB dotazy ===
-
-    uint64 GetAccountItemCount(uint32 accountId, uint8 teamId, uint32 itemEntry)
+    uint64 GetAccountItemCount(uint32 accountId, uint8 teamId, uint8 categoryId, uint32 itemEntry)
     {
         if (!accountId || !itemEntry)
             return 0;
 
         if (QueryResult r = WorldDatabase.Query(
                 "SELECT totalCount FROM customs.account_material_bank "
-                "WHERE accountId={} AND team={} AND itemEntry={}",
-                accountId, teamId, itemEntry))
+                "WHERE accountId={} AND team={} AND categoryId={} AND itemEntry={}",
+                accountId, uint32(teamId), uint32(categoryId), itemEntry))
         {
             Field* f = r->Fetch();
             return f[0].Get<uint64>();
@@ -63,34 +63,44 @@ namespace MaterialBank
         return 0;
     }
 
-    uint64 GetAccountItemCount(uint32 accountId, uint32 itemEntry)
+    uint64 GetAccountItemCount(uint32 accountId, uint8 teamId, uint32 itemEntry)
     {
-        return GetAccountItemCount(accountId, 0, itemEntry);
+        return GetAccountItemCount(accountId, teamId, DEFAULT_CATEGORY, itemEntry);
     }
 
-    void AddToAccountBank(uint32 accountId, uint8 teamId, uint32 itemEntry, uint64 count)
+    uint64 GetAccountItemCount(uint32 accountId, uint32 itemEntry)
+    {
+        return GetAccountItemCount(accountId, 0, DEFAULT_CATEGORY, itemEntry);
+    }
+
+    void AddToAccountBank(uint32 accountId, uint8 teamId, uint8 categoryId, uint32 itemEntry, uint64 count)
     {
         if (!accountId || !itemEntry || !count)
             return;
 
         WorldDatabase.DirectExecute(Acore::StringFormat(
-            "INSERT INTO customs.account_material_bank (accountId, team, itemEntry, totalCount) "
-            "VALUES ({}, {}, {}, {}) "
+            "INSERT INTO customs.account_material_bank (accountId, team, categoryId, itemEntry, totalCount) "
+            "VALUES ({}, {}, {}, {}, {}) "
             "ON DUPLICATE KEY UPDATE totalCount = totalCount + {}",
-            accountId, teamId, itemEntry, count, count).c_str());
+            accountId, uint32(teamId), uint32(categoryId), itemEntry, count, count).c_str());
+    }
+
+    void AddToAccountBank(uint32 accountId, uint8 teamId, uint32 itemEntry, uint64 count)
+    {
+        AddToAccountBank(accountId, teamId, DEFAULT_CATEGORY, itemEntry, count);
     }
 
     void AddToAccountBank(uint32 accountId, uint32 itemEntry, uint64 count)
     {
-        AddToAccountBank(accountId, 0, itemEntry, count);
+        AddToAccountBank(accountId, 0, DEFAULT_CATEGORY, itemEntry, count);
     }
 
-    uint64 RemoveFromAccountBank(uint32 accountId, uint8 teamId, uint32 itemEntry, uint64 count)
+    uint64 RemoveFromAccountBank(uint32 accountId, uint8 teamId, uint8 categoryId, uint32 itemEntry, uint64 count)
     {
         if (!accountId || !itemEntry || !count)
             return 0;
 
-        uint64 have = GetAccountItemCount(accountId, teamId, itemEntry);
+        uint64 have = GetAccountItemCount(accountId, teamId, categoryId, itemEntry);
         if (!have)
             return 0;
 
@@ -103,27 +113,33 @@ namespace MaterialBank
         {
             WorldDatabase.DirectExecute(Acore::StringFormat(
                 "DELETE FROM customs.account_material_bank "
-                "WHERE accountId={} AND team={} AND itemEntry={}",
-                accountId, uint32(teamId), itemEntry).c_str());
+                "WHERE accountId={} AND team={} AND categoryId={} AND itemEntry={}",
+                accountId, uint32(teamId), uint32(categoryId), itemEntry).c_str());
         }
         else
         {
             WorldDatabase.DirectExecute(Acore::StringFormat(
                 "UPDATE customs.account_material_bank "
                 "SET totalCount = {} "
-                "WHERE accountId={} AND team={} AND itemEntry={}",
-                newCount, accountId, uint32(teamId), itemEntry).c_str());
+                "WHERE accountId={} AND team={} AND categoryId={} AND itemEntry={}",
+                newCount, accountId, uint32(teamId), uint32(categoryId), itemEntry).c_str());
         }
 
         return count;
     }
 
-    uint64 RemoveFromAccountBank(uint32 accountId, uint32 itemEntry, uint64 count)
+    uint64 RemoveFromAccountBank(uint32 accountId, uint8 teamId, uint32 itemEntry, uint64 count)
     {
-        return RemoveFromAccountBank(accountId, 0, itemEntry, count);
+        return RemoveFromAccountBank(accountId, teamId, DEFAULT_CATEGORY, itemEntry, count);
     }
 
-    uint64 MoveFromBankToBags(Player* player, uint32 itemEntry, uint64 missing)
+    uint64 RemoveFromAccountBank(uint32 accountId, uint32 itemEntry, uint64 count)
+    {
+        return RemoveFromAccountBank(accountId, 0, DEFAULT_CATEGORY, itemEntry, count);
+    }
+
+
+    uint64 MoveFromBankToBags(Player* player, uint8 categoryId, uint32 itemEntry, uint64 missing)
     {
         if (!player || !itemEntry || !missing)
             return 0;
@@ -134,7 +150,7 @@ namespace MaterialBank
 
         uint8 teamId = GetBankTeamId(player);
 
-        uint64 bankCount = GetAccountItemCount(accountId, teamId, itemEntry);
+        uint64 bankCount = GetAccountItemCount(accountId, teamId, categoryId, itemEntry);
         if (!bankCount)
             return 0;
 
@@ -181,14 +197,75 @@ namespace MaterialBank
         if (!addedTotal)
             return 0;
 
-        uint64 removed = RemoveFromAccountBank(accountId, teamId, itemEntry, addedTotal);
+        uint64 removed = RemoveFromAccountBank(accountId, teamId, categoryId, itemEntry, addedTotal);
         if (removed < addedTotal)
         {
-            LOG_WARN("module", "MaterialBank: removed {} < added {} for account {} team {} item {}",
-                     removed, addedTotal, accountId, uint32(teamId), itemEntry);
+            LOG_WARN("module", "MaterialBank: removed {} < added {} for account {} team {} category {} item {}",
+                     removed, addedTotal, accountId, uint32(teamId), uint32(categoryId), itemEntry);
         }
 
         return removed;
+    }
+
+    uint64 MoveFromBankToBags(Player* player, uint32 itemEntry, uint64 missing)
+    {
+        if (!player || !itemEntry || !missing)
+            return 0;
+
+        uint32 accountId = GetAccountId(player);
+        if (!accountId)
+            return 0;
+
+        uint8 teamId = GetBankTeamId(player);
+
+        QueryResult r = WorldDatabase.Query(
+            "SELECT categoryId, totalCount FROM customs.account_material_bank "
+            "WHERE accountId={} AND team={} AND itemEntry={} AND totalCount>0 "
+            "ORDER BY categoryId ASC",
+            accountId, uint32(teamId), itemEntry);
+
+        if (!r)
+            return 0;
+
+        uint64 remaining  = missing;
+        uint64 movedTotal = 0;
+
+        do
+        {
+            Field* f = r->Fetch();
+            uint8 categoryId = f[0].Get<uint8>();
+
+            if (!remaining)
+                break;
+
+            uint64 moved = MoveFromBankToBags(player, categoryId, itemEntry, remaining);
+            if (!moved)
+            {
+                break;
+            }
+
+            movedTotal += moved;
+            if (movedTotal >= missing)
+                break;
+
+            remaining = missing - movedTotal;
+        }
+        while (r->NextRow());
+
+        return movedTotal;
+    }
+
+    uint64 GetBankItemCount(Player* player, uint8 categoryId, uint32 itemEntry)
+    {
+        if (!player || !itemEntry)
+            return 0;
+
+        uint32 accountId = GetAccountId(player);
+        if (!accountId)
+            return 0;
+
+        uint8 teamId = GetBankTeamId(player);
+        return GetAccountItemCount(accountId, teamId, categoryId, itemEntry);
     }
 
     uint64 GetBankItemCount(Player* player, uint32 itemEntry)
@@ -201,7 +278,20 @@ namespace MaterialBank
             return 0;
 
         uint8 teamId = GetBankTeamId(player);
-        return GetAccountItemCount(accountId, teamId, itemEntry);
+
+        if (QueryResult r = WorldDatabase.Query(
+                "SELECT SUM(totalCount) FROM customs.account_material_bank "
+                "WHERE accountId={} AND team={} AND itemEntry={}",
+                accountId, uint32(teamId), itemEntry))
+        {
+            Field* f = r->Fetch();
+            if (f[0].IsNull())
+                return 0;
+
+            return f[0].Get<uint64>();
+        }
+
+        return 0;
     }
 
     void EnsureReagentsFromAccountBank(Player* player, SpellInfo const* spellInfo)
@@ -227,7 +317,7 @@ namespace MaterialBank
 
             uint64 missing = static_cast<uint64>(needed - haveInBags);
 
-            MoveFromBankToBags(player, itemEntry, missing);
+            MoveFromBankToBags(player, DEFAULT_CATEGORY, itemEntry, missing);
         }
     }
 }
