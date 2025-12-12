@@ -8,6 +8,7 @@
 #include "ItemTemplate.h"
 #include "Creature.h"
 #include "GameTime.h"
+#include "DatabaseEnv.h"
 
 #include "material_bank.h"
 
@@ -113,8 +114,8 @@ namespace
     {
         std::string s = Prefix();
         s += T(
-            "Použití: .mb pull <itemId[:count]> nebo .bank",
-            "Usage: .mb pull <itemId[:count]> or .bank"
+            "Použití: .mb pull <itemId[:count]>, .mb sync nebo .bank",
+            "Usage: .mb pull <itemId[:count]>, .mb sync or .bank"
         );
         handler->SendSysMessage(s.c_str());
     }
@@ -274,6 +275,60 @@ namespace
         }
         handler->SendSysMessage(msg.c_str());
     }
+	
+    static bool DoSync(Player* player, ChatHandler* handler)
+    {
+        if (!player || !handler)
+            return false;
+
+        WorldSession* session = player->GetSession();
+        if (!session)
+            return false;
+
+        uint32 accountId = session->GetAccountId();
+        if (!accountId)
+            return false;
+
+        uint8 teamId = MaterialBank::GetBankTeamId(player);
+
+        QueryResult r = WorldDatabase.Query(
+            "SELECT itemEntry, categoryId, totalCount "
+            "FROM customs.account_material_bank "
+            "WHERE accountId={} AND team={} AND totalCount>0 "
+            "ORDER BY itemEntry ASC",
+            accountId, uint32(teamId));
+
+        std::string prefix = Prefix();
+
+		std::string langCode = (LangOpt() == Lang::EN) ? "en" : "cs";
+		handler->SendSysMessage((prefix + "SYNC_LANG=" + langCode).c_str());
+		
+        handler->SendSysMessage((prefix + "SYNC_BEGIN").c_str());
+
+        if (r)
+        {
+            do
+            {
+                Field* f = r->Fetch();
+                uint32 itemEntry  = f[0].Get<uint32>();
+                uint8  categoryId = f[1].Get<uint8>();
+                uint64 totalCount = f[2].Get<uint64>();
+
+                std::string line = prefix + Acore::StringFormat(
+                    "SYNC item={} cat={} total={}",
+                    itemEntry,
+                    uint32(categoryId),
+                    static_cast<unsigned long long>(totalCount));
+
+                handler->SendSysMessage(line.c_str());
+            }
+            while (r->NextRow());
+        }
+
+        handler->SendSysMessage((prefix + "SYNC_END").c_str());
+
+        return true;
+    }	
 
     static void DoPullOne(Player* player, ChatHandler* handler, std::string const& token)
 	{
@@ -437,6 +492,11 @@ namespace MaterialBank
         std::string tokLower = tok1;
         std::transform(tokLower.begin(), tokLower.end(),
                        tokLower.begin(), [](unsigned char c){ return std::tolower(c); });
+					   
+		if (tokLower == "sync" || tokLower == "export")
+        {
+            return DoSync(player, handler);
+        }
 
         if (tokLower == "pull")
         {
