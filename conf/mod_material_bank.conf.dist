@@ -29,3 +29,7 @@ MaterialBank.BankerDespawnMs = 300000
 # EN: Cooldown between summoning the banker (in seconds)
 # default 305 = 5 minutes
 MaterialBank.SummonCooldown = 305
+
+# CS: Minimální interval mezi .mb sync (Sync tlačítko v addonu) 
+# EN: Minimum interval between .mb sync (Sync button in addon)
+MaterialBank.SyncCooldownMinutes = 15

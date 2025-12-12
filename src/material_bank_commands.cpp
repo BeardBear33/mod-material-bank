@@ -163,6 +163,9 @@ namespace
 
     // ===== Summon banker cooldown tracking =====
     static std::unordered_map<uint64, uint32> s_lastBankerCall;
+	
+	// ===== Sync cooldown per account =====
+	static std::unordered_map<uint32, uint32> s_lastSyncByAccount;
 
     static bool CanCallBanker(Player* player, ChatHandler* handler)
     {
@@ -276,6 +279,57 @@ namespace
         handler->SendSysMessage(msg.c_str());
     }
 	
+	    static bool CanSync(Player* player, ChatHandler* handler)
+    {
+        if (!player || !handler)
+            return false;
+
+        WorldSession* session = player->GetSession();
+        if (!session)
+            return false;
+
+        uint32 accountId = session->GetAccountId();
+        if (!accountId)
+            return false;
+
+        // cooldown v minutách (default 15)
+        uint32 cdMin = sConfigMgr->GetOption<uint32>("MaterialBank.SyncCooldownMinutes", 15u);
+        uint32 cdSec = cdMin * 60u;
+
+        uint32 now = uint32(GameTime::GetGameTime().count());
+
+        auto it = s_lastSyncByAccount.find(accountId);
+        if (it != s_lastSyncByAccount.end())
+        {
+            uint32 last = it->second;
+            if (now < last + cdSec)
+            {
+                uint32 remain = (last + cdSec) - now;
+
+                std::string msg = Prefix();
+                if (LangOpt() == Lang::EN)
+                {
+                    msg += Acore::StringFormat(
+                        "You can use .mb sync again in {} seconds.",
+                        remain);
+                }
+                else
+                {
+                    msg += Acore::StringFormat(
+                        "Příkaz .mb sync můžeš znovu použít za {} s.",
+                        remain);
+                }
+
+                handler->SendSysMessage(msg.c_str());
+                return false;
+            }
+        }
+
+        s_lastSyncByAccount[accountId] = now;
+        return true;
+    }
+
+	
     static bool DoSync(Player* player, ChatHandler* handler)
     {
         if (!player || !handler)
@@ -288,6 +342,9 @@ namespace
         uint32 accountId = session->GetAccountId();
         if (!accountId)
             return false;
+		
+		if (!CanSync(player, handler))
+            return true;
 
         uint8 teamId = MaterialBank::GetBankTeamId(player);
 
