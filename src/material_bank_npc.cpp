@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace MaterialBank
 {
@@ -42,6 +43,226 @@ namespace MaterialBank
             return sess->GetAccountId();
         return 0;
     }
+	
+	//config klíč pro zákaz vkladu konkrátních item id (má nejvyšší prioritu)
+	static std::unordered_set<uint32> s_blockDeposit;
+    static std::string s_blockDepositRaw;
+
+    static void RebuildBlockDepositListIfNeeded()
+    {
+        std::string raw = sConfigMgr->GetOption<std::string>("MaterialBank.BlockDepositItemIds", "");
+
+        auto trim = [](std::string& s)
+        {
+            auto ns = [](int ch){ return !std::isspace(ch); };
+            s.erase(s.begin(), std::find_if(s.begin(), s.end(), ns));
+            s.erase(std::find_if(s.rbegin(), s.rend(), ns).base(), s.end());
+        };
+
+        trim(raw);
+
+        if (raw == s_blockDepositRaw)
+            return;
+
+        s_blockDepositRaw = raw;
+        s_blockDeposit.clear();
+
+        uint32 val = 0;
+        bool inNum = false;
+
+        for (char c : raw)
+        {
+            if (c >= '0' && c <= '9')
+            {
+                inNum = true;
+                val = val * 10u + uint32(c - '0');
+            }
+            else
+            {
+                if (inNum)
+                {
+                    if (val > 0)
+                        s_blockDeposit.insert(val);
+                    val = 0;
+                    inNum = false;
+                }
+            }
+        }
+
+        if (inNum && val > 0)
+            s_blockDeposit.insert(val);
+    }
+
+    static bool IsDepositBlockedById(uint32 itemEntry)
+    {
+        RebuildBlockDepositListIfNeeded();
+        return (itemEntry != 0) && (s_blockDeposit.find(itemEntry) != s_blockDeposit.end());
+    }
+	
+	//config klíč pro soulbound item
+    static std::unordered_set<uint32> s_allowSoulbound;
+    static std::string s_allowSoulboundRaw;
+
+    static void RebuildSoulboundAllowlistIfNeeded()
+    {
+        std::string raw = sConfigMgr->GetOption<std::string>("MaterialBank.AllowSoulboundItemIds", "");
+
+        auto trim = [](std::string& s)
+        {
+            auto ns = [](int ch){ return !std::isspace(ch); };
+            s.erase(s.begin(), std::find_if(s.begin(), s.end(), ns));
+            s.erase(std::find_if(s.rbegin(), s.rend(), ns).base(), s.end());
+        };
+
+        trim(raw);
+
+        if (raw == s_allowSoulboundRaw)
+            return;
+
+        s_allowSoulboundRaw = raw;
+        s_allowSoulbound.clear();
+
+        uint32 val = 0;
+        bool inNum = false;
+
+        for (char c : raw)
+        {
+            if (c >= '0' && c <= '9')
+            {
+                inNum = true;
+                val = val * 10u + uint32(c - '0');
+            }
+            else
+            {
+                if (inNum)
+                {
+                    if (val > 0)
+                        s_allowSoulbound.insert(val);
+                    val = 0;
+                    inNum = false;
+                }
+            }
+        }
+
+        if (inNum && val > 0)
+            s_allowSoulbound.insert(val);
+    }
+
+    static bool IsSoulboundAllowed(uint32 itemEntry)
+    {
+        RebuildSoulboundAllowlistIfNeeded();
+        return (itemEntry != 0) && (s_allowSoulbound.find(itemEntry) != s_allowSoulbound.end());
+    }
+	
+	//config klíč pro quest item
+	static std::unordered_set<uint32> s_allowQuest;
+    static std::string s_allowQuestRaw;
+
+    static void RebuildQuestAllowlistIfNeeded()
+    {
+        std::string raw = sConfigMgr->GetOption<std::string>("MaterialBank.AllowQuestItemIds", "");
+
+        auto trim = [](std::string& s)
+        {
+            auto ns = [](int ch){ return !std::isspace(ch); };
+            s.erase(s.begin(), std::find_if(s.begin(), s.end(), ns));
+            s.erase(std::find_if(s.rbegin(), s.rend(), ns).base(), s.end());
+        };
+
+        trim(raw);
+
+        if (raw == s_allowQuestRaw)
+            return;
+
+        s_allowQuestRaw = raw;
+        s_allowQuest.clear();
+
+        uint32 val = 0;
+        bool inNum = false;
+
+        for (char c : raw)
+        {
+            if (c >= '0' && c <= '9')
+            {
+                inNum = true;
+                val = val * 10u + uint32(c - '0');
+            }
+            else
+            {
+                if (inNum)
+                {
+                    if (val > 0)
+                        s_allowQuest.insert(val);
+                    val = 0;
+                    inNum = false;
+                }
+            }
+        }
+
+        if (inNum && val > 0)
+            s_allowQuest.insert(val);
+    }
+
+    static bool IsQuestAllowed(uint32 itemEntry)
+    {
+        RebuildQuestAllowlistIfNeeded();
+        return (itemEntry != 0) && (s_allowQuest.find(itemEntry) != s_allowQuest.end());
+    }
+	
+	//config klíč pro soulbound quest item
+	static std::unordered_set<uint32> s_allowQuestSoulbound;
+    static std::string s_allowQuestSoulboundRaw;
+
+    static void RebuildQuestSoulboundAllowlistIfNeeded()
+    {
+        std::string raw = sConfigMgr->GetOption<std::string>("MaterialBank.AllowQuestSoulboundItemIds", "");
+
+        auto trim = [](std::string& s)
+        {
+            auto ns = [](int ch){ return !std::isspace(ch); };
+            s.erase(s.begin(), std::find_if(s.begin(), s.end(), ns));
+            s.erase(std::find_if(s.rbegin(), s.rend(), ns).base(), s.end());
+        };
+
+        trim(raw);
+
+        if (raw == s_allowQuestSoulboundRaw)
+            return;
+
+        s_allowQuestSoulboundRaw = raw;
+        s_allowQuestSoulbound.clear();
+
+        uint32 val = 0;
+        bool inNum = false;
+
+        for (char c : raw)
+        {
+            if (c >= '0' && c <= '9')
+            {
+                inNum = true;
+                val = val * 10u + uint32(c - '0');
+            }
+            else
+            {
+                if (inNum)
+                {
+                    if (val > 0)
+                        s_allowQuestSoulbound.insert(val);
+                    val = 0;
+                    inNum = false;
+                }
+            }
+        }
+
+        if (inNum && val > 0)
+            s_allowQuestSoulbound.insert(val);
+    }
+
+    static bool IsQuestSoulboundAllowed(uint32 itemEntry)
+    {
+        RebuildQuestSoulboundAllowlistIfNeeded();
+        return (itemEntry != 0) && (s_allowQuestSoulbound.find(itemEntry) != s_allowQuestSoulbound.end());
+    }
 
     static bool IsBlockedForDeposit(Item* item)
     {
@@ -52,11 +273,28 @@ namespace MaterialBank
         if (!proto)
             return true;
 
-        if (proto->Class == ITEM_CLASS_QUEST)
+        uint32 entry = item->GetEntry();
+
+        if (IsDepositBlockedById(entry))
             return true;
 
+        if (proto->Class == ITEM_CLASS_QUEST && item->IsSoulBound())
+        {
+            if (IsQuestSoulboundAllowed(entry))
+                return false;
+        }
+
+        if (proto->Class == ITEM_CLASS_QUEST)
+        {
+            if (!IsQuestAllowed(entry))
+                return true;
+        }
+
         if (item->IsSoulBound())
-            return true;
+        {
+            if (!IsSoulboundAllowed(entry))
+                return true;
+        }
 
         return false;
     }

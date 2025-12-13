@@ -33,3 +33,22 @@ MaterialBank.SummonCooldown = 305
 # CS: Minimální interval mezi .mb sync (Sync tlačítko v addonu) 
 # EN: Minimum interval between .mb sync (Sync button in addon)
 MaterialBank.SyncCooldownMinutes = 15
+
+# CS: Seznam ID itemEntry která jsou vždy zablokována pro vkládání.
+#     Tento seznam zakázaných položek má přednost před všemi seznamy povolených položek.
+#
+# EN: List of itemEntry IDs that are ALWAYS blocked from deposit.
+#     This denylist has priority over all allowlists.
+MaterialBank.BlockDepositItemIds = ""
+
+# CS: Povoluje vkládání konkrétních soulbound předmětů.
+# EN: Allows depositing specific soulbound items.
+MaterialBank.AllowSoulboundItemIds = ""
+
+# CS: Povoluje vkládání konkrétních soulbound questových předmětů.
+# EN: Allows depositing specific soulbound quest items.
+MaterialBank.AllowQuestSoulboundItemIds = "12753"
+
+# CS: Povoluje vkládání konkrétních questových předmětů.
+# EN: Allows depositing specific quest items.
+MaterialBank.AllowQuestItemIds = "25719,11754,12607"
