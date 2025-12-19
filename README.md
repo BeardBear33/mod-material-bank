@@ -16,7 +16,7 @@ NPC for Material Bank is spawned with the command `.npc add 987458`.
 > **Addon pro WoW 3.3.5a, který umožňuje vybírat materiál z profesního okna pro vybraný recept, NOVĚ: minimap ikona pro GUI:**  
 > [Material Bank (3.3.5a Addon)](https://github.com/BeardBear33/mod-material-bank/releases/tag/MB_4.0)  
 > **Doporučený addon pro WoW 3.3.5a zajišťující správné zobrazování diakritiky:**  
-> [CzechFontFix (3.3.5a Addon)](https://github.com/BeardBear33/mod-guild-village/releases/tag/CFF_2.0)
+> [CzechFontFix (3.3.5a Addon)](https://github.com/BeardBear33/Czech-font-fix-addon/releases)
 
 > **Addon for WoW 3.3.5a that allows you to withdraw materials from the profession window for the selected recipe, NEW: minimap icon for GUI:**  
 > [Material Bank (3.3.5a Addon)](https://github.com/BeardBear33/mod-material-bank/releases/tag/MB_4.0)
