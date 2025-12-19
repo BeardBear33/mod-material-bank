@@ -44,7 +44,7 @@ namespace MaterialBank
         return 0;
     }
 	
-	//config klíč pro zákaz vkladu konkrátních item id (má nejvyšší prioritu)
+	//config klíč pro zákaz vkladu konkrétních item id (má nejvyšší prioritu)
 	static std::unordered_set<uint32> s_blockDeposit;
     static std::string s_blockDepositRaw;
 
@@ -1421,6 +1421,12 @@ namespace MaterialBank
                         ? "Deposited {}x {} to your account storage."
                         : "Uloženo {}x {} do účtové úschovy.",
                     totalDeposited, link));
+					
+				{
+					std::string meta = "MB_UPDATE item=" + std::to_string(itemEntry)
+						+ " cat=" + std::to_string(uint32(usedCategoryId));
+					ch.SendSysMessage(meta.c_str());
+				}
 
                 if (redirectedExisting)
                 {
