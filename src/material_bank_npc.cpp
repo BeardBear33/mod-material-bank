@@ -10,6 +10,7 @@
 #include "DatabaseEnv.h"
 #include "StringFormat.h"
 #include "Chat.h"
+#include "ObjectAccessor.h"
 
 #include "material_bank.h"
 
@@ -298,6 +299,68 @@ namespace MaterialBank
 
         return false;
     }
+	
+	// ===== uložení inventáře po vkladu/výběru =====
+	static constexpr uint32 MB_MIN_SAVE_DELAY_MS = 1000u;
+	
+	struct PendingSave
+	{
+		ObjectGuid guid;
+		uint32     remainingMs = 0;
+	};
+	
+	static std::unordered_map<uint64, PendingSave> s_pendingSavesNpc;
+	
+	static uint32 GetSaveDelayMs()
+	{
+		uint32 ms = sConfigMgr->GetOption<uint32>("MaterialBank.SaveDelayMs", 3500u);
+		if (ms < MB_MIN_SAVE_DELAY_MS)
+			ms = MB_MIN_SAVE_DELAY_MS;
+		return ms;
+	}
+	
+	static void ScheduleDebouncedSave(Player* player)
+	{
+		if (!player)
+			return;
+	
+		uint64 key = player->GetGUID().GetCounter();
+		s_pendingSavesNpc[key] = PendingSave{ player->GetGUID(), GetSaveDelayMs() };
+	}
+	
+	class MaterialBankNpcDebouncedSaveWorldScript : public WorldScript
+	{
+	public:
+		MaterialBankNpcDebouncedSaveWorldScript() : WorldScript("MaterialBankNpcDebouncedSaveWorldScript") { }
+	
+		void OnUpdate(uint32 diff) override
+		{
+			if (s_pendingSavesNpc.empty())
+				return;
+	
+			for (auto it = s_pendingSavesNpc.begin(); it != s_pendingSavesNpc.end(); )
+			{
+				PendingSave& ps = it->second;
+	
+				if (diff >= ps.remainingMs)
+				{
+					if (Player* p = ObjectAccessor::FindConnectedPlayer(ps.guid))
+					{
+						CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+						p->SaveInventoryAndGoldToDB(trans);
+						CharacterDatabase.CommitTransaction(trans);
+					}
+	
+					it = s_pendingSavesNpc.erase(it);
+				}
+				else
+				{
+					ps.remainingMs -= diff;
+					++it;
+				}
+			}
+		}
+	};
 
     // barva podle kvality (pro katalog)
     static inline char const* QualityHex(uint32 q)
@@ -1415,6 +1478,8 @@ namespace MaterialBank
             }
             else
             {
+				ScheduleDebouncedSave(player);
+				
                 std::string link = BuildItemLink(itemEntry);
                 ch.SendSysMessage(Acore::StringFormat(
                     (LangOpt() == Lang::EN)
@@ -1650,6 +1715,8 @@ namespace MaterialBank
             }
             else
             {
+				ScheduleDebouncedSave(player);
+				
                 std::string link = BuildItemLink(itemEntry);
 
                 ChatHandler(player->GetSession()).SendSysMessage(Acore::StringFormat(
@@ -1667,4 +1734,5 @@ namespace MaterialBank
 void RegisterMaterialBankNpc()
 {
     new MaterialBank::npc_account_material_bank();
+	new MaterialBank::MaterialBankNpcDebouncedSaveWorldScript();
 }

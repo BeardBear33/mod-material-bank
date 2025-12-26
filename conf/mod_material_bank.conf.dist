@@ -39,11 +39,11 @@ MaterialBank.SyncCooldownMinutes = 15
 #
 # EN: List of itemEntry IDs that are ALWAYS blocked from deposit.
 #     This denylist has priority over all allowlists.
-MaterialBank.BlockDepositItemIds = ""
+MaterialBank.BlockDepositItemIds = "17030"
 
 # CS: Povoluje vkládání konkrétních soulbound předmětů.
 # EN: Allows depositing specific soulbound items.
-MaterialBank.AllowSoulboundItemIds = "44050"
+MaterialBank.AllowSoulboundItemIds = "44050,42943,42945,42947,42949,42951,42944,42946,42948,42950,42952,42984,42991,48677,48685,48689,42985,42992,48683,48687,48691,48716,48718,50255,49177,44107,44103,44105,44102,44101,44100,44099,44098,44097,44115,44091,44096,44092,44094,44095,44093"
 
 # CS: Povoluje vkládání konkrétních soulbound questových předmětů.
 # EN: Allows depositing specific soulbound quest items.
@@ -52,3 +52,13 @@ MaterialBank.AllowQuestSoulboundItemIds = "12753,44133,44149,44874,44877,44701,4
 # CS: Povoluje vkládání konkrétních questových předmětů.
 # EN: Allows depositing specific quest items.
 MaterialBank.AllowQuestItemIds = "25719,11754,12607"
+
+# CS: Po každém vkladu/výběru se spustí zpožděné uložení inventáře postavy.
+#	  Pokud před uplynutím této prodlevy proběhne další push/pull, časovač se resetuje a začne běžet znovu.    
+#
+# EN: After each deposit/withdrawal, a debounced save of the character’s inventory is triggered.
+#     If another push/pull happens before the delay expires, the timer resets.
+#
+# Minimum: 1000 (1 second)
+# Recommended: 2500 - 5000
+MaterialBank.SaveDelayMs = 3500

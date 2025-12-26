@@ -11,6 +11,7 @@
 #include "DatabaseEnv.h"
 #include "Item.h"
 #include "Bag.h"
+#include "ObjectAccessor.h"
 
 #include "material_bank.h"
 
@@ -510,6 +511,68 @@ namespace
 	
 	// ===== Sync cooldown per account =====
 	static std::unordered_map<uint32, uint32> s_lastSyncByAccount;
+	
+	// ===== autosave inventory =====
+    static constexpr uint32 MB_MIN_SAVE_DELAY_MS = 1000u;
+
+    struct PendingSave
+    {
+        ObjectGuid guid;
+        uint32     remainingMs = 0;
+    };
+
+    static std::unordered_map<uint64, PendingSave> s_pendingSaves;
+
+    static uint32 GetSaveDelayMs()
+    {
+        uint32 ms = sConfigMgr->GetOption<uint32>("MaterialBank.SaveDelayMs", 3500u);
+        if (ms < MB_MIN_SAVE_DELAY_MS)
+            ms = MB_MIN_SAVE_DELAY_MS;
+        return ms;
+    }
+
+    static void ScheduleDebouncedSave(Player* player)
+    {
+        if (!player)
+            return;
+
+        uint64 key = player->GetGUID().GetCounter();
+        s_pendingSaves[key] = PendingSave{ player->GetGUID(), GetSaveDelayMs() };
+    }
+
+    class MaterialBankDebouncedSaveWorldScript : public WorldScript
+    {
+    public:
+        MaterialBankDebouncedSaveWorldScript() : WorldScript("MaterialBankDebouncedSaveWorldScript") { }
+
+        void OnUpdate(uint32 diff) override
+        {
+            if (s_pendingSaves.empty())
+                return;
+
+            for (auto it = s_pendingSaves.begin(); it != s_pendingSaves.end(); )
+            {
+                PendingSave& ps = it->second;
+
+                if (diff >= ps.remainingMs)
+				{
+					if (Player* p = ObjectAccessor::FindConnectedPlayer(ps.guid))
+					{
+						CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+						p->SaveInventoryAndGoldToDB(trans);
+						CharacterDatabase.CommitTransaction(trans);
+					}
+				
+					it = s_pendingSaves.erase(it);
+				}
+				else
+				{
+					ps.remainingMs -= diff;
+					++it;
+				}
+            }
+        }
+    };
 
     static bool CanCallBanker(Player* player, ChatHandler* handler)
     {
@@ -845,6 +908,7 @@ namespace
 		}
 	
 		handler->SendSysMessage(msg.c_str());
+		ScheduleDebouncedSave(player);
 	}
 	
 	static void DoPushOne(Player* player, ChatHandler* handler, std::string const& token)
@@ -1081,6 +1145,7 @@ namespace
 			}
 			handler->SendSysMessage(msg.c_str());
 		}
+		ScheduleDebouncedSave(player);
 	}
 
 	
@@ -1257,5 +1322,6 @@ namespace MaterialBank
     {
         new MaterialBankCommandScript();
         new MaterialBank_ChatHook();
+		new MaterialBankDebouncedSaveWorldScript();
     }
 }
